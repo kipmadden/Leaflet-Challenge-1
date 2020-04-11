@@ -1,7 +1,8 @@
 // Store our USGS Earthquake API endpoint inside quakeUrl
 var quakeUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 // Store our Tectonic Plate API endpoint inside platesUrl
-var platesUrl = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json"
+var platesUrl = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json";
+// var platesUrl = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json";
 
 
 // Perform a GET request to the quake URL
@@ -9,15 +10,16 @@ d3.json(quakeUrl, function(data) {
   // Store earthquake JSON response object into variable
   let earthquakeData = data.features
   // Perfom a GET request to the plates URL inside other d3.json so both objects within scope
-  d3.json(platesUrl, function(d) {
+  d3.json(platesUrl, function(data) {
     // Store plate tectonic JSON response object into variable
-    let platesData = d.features
+    let platesData = data.features
 
     // Call createMap function and pass both JSON response objects
     createMap(earthquakeData,platesData)
   })
 })
 
+// Function to Create Map 
 function createMap(earthquakeData,platesData) {
 
     // Create Markers for each earthquakeData feature
@@ -39,21 +41,20 @@ function createMap(earthquakeData,platesData) {
     )
 
     // Create layerGroup for earthquakeMarkers
-    let earthquakes=L.layerGroup(earthquakeMarkers);
-    //    console.log(d3.extent(d3.values(earthquakeData,((d) => +d.properties.mag))));
-      //  var mags = earthquakeData.map((d) => magCheck(+d.properties.mag));
-      //  console.log(d3.extent(mags));
-      //  console.log(mags);
-    //    console.log(earthquakeData.properties.mag);
-      
-    // Create Polylines for each plateData feature
-    let platesPolylines = platesData.map((feature) =>
-      // Make polyline for each feature
-      L.polyline(feature.geometry.coordinates)
-    )
+    let earthquakes = L.layerGroup(earthquakeMarkers);
 
-    // Create layerGroup for platesPolylines
-    let plates = L.layerGroup(platesPolylines);
+
+    function makePolyline(feature, layer){
+      L.polyline(feature.geometry.coordinates);
+    }
+    
+    let plates = L.geoJSON(platesData, {
+      onEachFeature: makePolyline,
+        style: {
+          color: 'red',
+          opacity: 0.9
+        }
+    })
 
   
   // Define streetmap, darkmap, satellite and outdoors layers
@@ -101,9 +102,7 @@ function createMap(earthquakeData,platesData) {
 
   // Create our map, giving it the streetmap and earthquakes layers to display on load
   var myMap = L.map("map", {
-    center: [
-      37.09, -95.71
-    ],
+    center: [37.09, -95.71],
     zoom: 3,
     layers: [streetmap, earthquakes]
   });
@@ -118,7 +117,7 @@ legend.onAdd = function(myMap){
         "<k class='maglt3'></k><span>2-3</span><br>",
         "<k class='maglt4'></k><span>3-4</span><br>",
         "<k class='maglt5'></k><span>4-5</span><br>",
-        "<k class='maggt5'></k><span>6+</span><br>"
+        "<k class='maggt5'></k><span>5+</span><br>"
       ].join("");
     return div;
 }
@@ -165,7 +164,7 @@ legend.addTo(myMap);
 // negative magnitudes, which obviously can't be used for setting the circleMarker radius)
 function magCheck(mag){
   if (mag <= 1){
-      return 8
+      return 6
   }
-  return mag * 8;
+  return mag * 6;
 }
